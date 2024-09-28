@@ -16,9 +16,9 @@ class _LoadingState extends State<Loading> {
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            day_gradient1,
-            day_gradient2,
-            day_gradient3,
+            night_gradient1,
+            night_gradient2,
+            night_gradient3,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

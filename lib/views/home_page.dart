@@ -214,17 +214,36 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(
-                        height: 15,
+                        height: 60,
                       ),
                       Lottie.asset(isNight
                           ? 'assets/night.json'
                           : 'assets/sunWithClouds.json'),
-                      Text(
-                        weather?.weatherCondition ?? "",
-                        style: const TextStyle(
-                          fontSize: 30,
-                          color: Colors.white,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            weather?.weatherCondition ?? "",
+                            style: const TextStyle(
+                              fontSize: 30,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          isNight
+                              ? const Icon(
+                                  Icons.nights_stay_outlined,
+                                  color: Color(0xffffffff),
+                                  size: 30,
+                                )
+                              : const Icon(
+                                  Icons.wb_sunny_outlined,
+                                  color: Color(0xffffffff),
+                                  size: 30,
+                                )
+                        ],
                       ),
                       const SizedBox(
                         height: 10,
@@ -247,7 +266,7 @@ class _HomePageState extends State<HomePage> {
                               Icons.water_drop_outlined,
                               color: Color(0xffffffff),
                             ),
-                            info: '${weather?.humidity ?? nullValue}%',
+                            info: '${weather?.humidity.toInt() ?? nullValue}%',
                             title: 'Humidity',
                           ),
                         ],
