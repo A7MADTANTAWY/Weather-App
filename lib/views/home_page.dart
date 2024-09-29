@@ -30,26 +30,9 @@ class _HomePageState extends State<HomePage> {
   Timer? timer;
   bool isLoading = true;
   double nullValue = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    checkLocationPermission();
-    fetchUserLocation();
-    getCurrentTime();
-    getCurrentDate(); // Call to initialize date
-    timer = Timer.periodic(const Duration(seconds: 1),
-        (Timer t) => getCurrentTime()); // Update every second
-  }
-
-  void getCurrentTime() {
-    DateTime now = DateTime.now();
-    String formattedTime =
-        DateFormat('hh:mm a').format(now); // Format to hh:mm:ss
-    setState(() {
-      currentTime = formattedTime;
-    });
-  }
+  String lottieAnimation =
+      "assets/default_weather.json"; // Default Lottie asset
+  bool isNight = false; // Add the isNight variable
 
   @override
   void dispose() {
@@ -57,16 +40,40 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  void getCurrentTime() {
+    DateTime now = DateTime.now();
+    String formattedTime =
+        DateFormat('hh:mm a').format(now); // Format to hh:mm a
+    setState(() {
+      currentTime = formattedTime;
+    });
+  }
+
+  void getCurrentDate() {
+    DateTime now = DateTime.now();
+    String formattedDate =
+        DateFormat('EEEE, MMMM d, yyyy').format(now); // Example format
+    setState(() {
+      date = formattedDate; // Update state with formatted date
+    });
+  }
+
   void fetchUserLocation() async {
     try {
       Position pos = await getCurrentLocation();
+
+      // Print the fetched position to verify that the location is dynamic
+      print(
+          'User location fetched: Latitude ${pos.latitude}, Longitude ${pos.longitude}');
+
       setState(() {
         position = pos;
       });
 
       if (position != null) {
         convertCoordinatesToAddress(position!.latitude, position!.longitude);
-        getWeather(position!.latitude, position!.longitude);
+        getWeather(position!.latitude,
+            position!.longitude); // Ensure dynamic location is used
       }
     } catch (e) {
       print('Error: $e');
@@ -86,8 +93,12 @@ class _HomePageState extends State<HomePage> {
 
   void getWeather(double latitude, double longitude) async {
     try {
+      // Print the dynamic location coordinates
+      print('Fetching weather for latitude: $latitude, longitude: $longitude');
+
       WeatherModel? w = await WeatherService()
           .getCurrentWeather(lat: latitude, lon: longitude);
+
       double convertTemperature(double temp) {
         return (temp - 273.15).floorToDouble();
       }
@@ -102,10 +113,23 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         weather = w;
-        w.temp = convertTemperature(w.temp);
-        w.maxTemp = convertTemperatureMax(w.maxTemp);
-        w.minTemp = convertTemperatureMin(w.minTemp);
+        if (w != null) {
+          w.temp = convertTemperature(w.temp);
+          w.maxTemp = convertTemperatureMax(w.maxTemp);
+          w.minTemp = convertTemperatureMin(w.minTemp);
+        }
         isLoading = false;
+
+        // Calculate sunset time and update isNight based on it
+        DateTime sunsetTime = getSunsetTime(latitude, longitude);
+        isNight = isNightTime(sunsetTime); // Update the isNight variable
+      });
+
+      // Fetch the appropriate Lottie animation based on the isNight value
+      w?.getCurrentLottie(isNight).then((animation) {
+        setState(() {
+          lottieAnimation = animation;
+        });
       });
     } catch (e) {
       print('Error: $e');
@@ -127,22 +151,47 @@ class _HomePageState extends State<HomePage> {
         now.year, now.month, now.day, 18, 0); // Example: Sunset at 18:00
   }
 
-  void getCurrentDate() {
-    DateTime now = DateTime.now();
-    String formattedDate =
-        DateFormat('EEEE, MMMM d, yyyy').format(now); // Example format
-    setState(() {
-      this.date = formattedDate; // Update state with formatted date
+  // Helper function to create WeatherCard widget
+  Widget buildWeatherCard(String title, String info, Icon icon) {
+    return WeatherCard(
+      color: isNight ? consts.night_gradient2 : constants.day_gradient2,
+      icon: icon,
+      info: info,
+      title: title,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    checkLocationPermission();
+    fetchUserLocation();
+    getCurrentTime();
+    getCurrentDate(); // Call to initialize date
+    timer = Timer.periodic(const Duration(minutes: 5), (Timer t) {
+      if (position != null) {
+        getWeather(position!.latitude, position!.longitude); // Update weather periodically
+      }
     });
+    timer = Timer.periodic(const Duration(seconds: 1),
+        (Timer t) => getCurrentTime()); // Update time every second
   }
 
   @override
   Widget build(BuildContext context) {
+    // Ensure to re-fetch weather based on dynamic position if it changes
+    if (position != null) {
+      getWeather(
+          position!.latitude,
+          position!
+              .longitude); // Update weather every time the position changes
+    }
+
     // Get the sunset time (replace this with your actual logic)
     DateTime sunsetTime =
         getSunsetTime(position?.latitude ?? 0, position?.longitude ?? 0);
 
-    bool isNight = isNightTime(sunsetTime); // Check if it's night
+    isNight = isNightTime(sunsetTime); // Check if it's night
 
     return isLoading
         ? const Loading()
@@ -189,16 +238,14 @@ class _HomePageState extends State<HomePage> {
                       Padding(
                         padding: const EdgeInsets.only(top: 0),
                         child: Text(
-                          '${weather!.temp.toInt()}°',
+                          '${weather?.temp.toInt() ?? 0}°',
                           style: const TextStyle(
                             fontSize: 80,
                             color: Colors.white,
                           ),
                         ),
                       ),
-                      const SizedBox(
-                        height: 5,
-                      ),
+                      const SizedBox(height: 5),
                       Text(
                         address?.locality ?? "",
                         style: const TextStyle(
@@ -213,25 +260,21 @@ class _HomePageState extends State<HomePage> {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(
-                        height: 60,
+                      const SizedBox(height: 60),
+                      Lottie.asset(
+                        lottieAnimation, // Use the updated Lottie animation
                       ),
-                      Lottie.asset(isNight
-                          ? 'assets/night.json'
-                          : 'assets/sunWithClouds.json'),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            weather?.weatherCondition ?? "",
+                            weather?.weatherCondition ?? "Unknown",
                             style: const TextStyle(
                               fontSize: 30,
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(
-                            width: 10,
-                          ),
+                          const SizedBox(width: 10),
                           isNight
                               ? const Icon(
                                   Icons.nights_stay_outlined,
@@ -245,66 +288,47 @@ class _HomePageState extends State<HomePage> {
                                 )
                         ],
                       ),
-                      const SizedBox(
-                        height: 10,
-                      ),
+                      const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          WeatherCard(
-                            color: isNight ? night_gradient2 : day_gradient2,
-                            icon: const Icon(
+                          buildWeatherCard(
+                            'Wind speed',
+                            '${weather?.windSpeed ?? nullValue} km/h',
+                            const Icon(
                               Icons.wind_power_outlined,
-                              color: Color(0xffffffff),
+                              color: Colors.white,
                             ),
-                            info: '${weather?.windSpeed ?? nullValue} km/h',
-                            title: 'Wind speed',
                           ),
-                          WeatherCard(
-                            color: isNight ? night_gradient2 : day_gradient2,
-                            icon: const Icon(
+                          buildWeatherCard(
+                            'Humidity',
+                            '${weather?.humidity.toInt() ?? nullValue}%',
+                            const Icon(
                               Icons.water_drop_outlined,
-                              color: Color(0xffffffff),
+                              color: Colors.white,
                             ),
-                            info: '${weather?.humidity.toInt() ?? nullValue}%',
-                            title: 'Humidity',
                           ),
                         ],
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          WeatherCard(
-                            color: isNight ? night_gradient2 : day_gradient2,
-                            icon: const Icon(
-                              Icons.wb_sunny,
-                              color: Color(0xffffffff),
+                          buildWeatherCard(
+                            'Min',
+                            '${weather?.minTemp.toInt() ?? nullValue}°',
+                            const Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.white,
                             ),
-                            info: '${weather?.minTemp ?? nullValue}°',
-                            title: 'Min Temp',
                           ),
-                          WeatherCard(
-                            color: isNight ? night_gradient2 : day_gradient2,
-                            icon: const Icon(
-                              Icons.wb_sunny,
-                              color: Color(0xffffffff),
+                          buildWeatherCard(
+                            'Max',
+                            '${weather?.maxTemp.toInt() ?? nullValue}°',
+                            const Icon(
+                              Icons.arrow_drop_up,
+                              color: Colors.white,
                             ),
-                            info: '${weather?.maxTemp ?? nullValue}°',
-                            title: 'Max Temp',
                           ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          WeatherCard(
-                              color: isNight ? night_gradient2 : day_gradient2,
-                              icon: const Icon(
-                                Icons.cloud,
-                                color: Color(0xffffffff),
-                              ),
-                              info:
-                                  '${weather?.weatherConditionDis ?? nullValue}',
-                              title: "cloud description"),
                         ],
                       ),
                     ],

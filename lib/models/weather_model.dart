@@ -1,3 +1,5 @@
+import 'package:lottie/lottie.dart';
+
 class WeatherModel {
   String weatherCondition;
   String weatherConditionDis;
@@ -46,5 +48,61 @@ class WeatherModel {
       windSpeed:
           (json['wind']['speed'] as num).toDouble(), // Explicit conversion
     );
+  }
+  // https://openweathermap.org/weather-conditions
+  Future<String> getCurrentLottie(bool insight) async {
+    if (id >= 200 && id <= 232) {
+      // Thunderstorm
+      if (insight) {
+        return "assets/thunderAndRain.json";
+      } else {
+        return "assets/sunCloudRainThunder.json";
+      }
+    } else if (id >= 300 && id <= 321) {
+      // Drizzle
+      if (insight) {
+        return "assets/nightCloudRain.json";
+      } else {
+        return "assets/sunCloudRain.json";
+      }
+    } else if (id >= 500 && id <= 531) {
+      // Rain
+      if (insight) {
+        return "assets/nightCloudRain.json";
+      } else {
+        return "assets/sunCloudRain.json";
+      }
+    } else if (id >= 600 && id <= 622) {
+      // Snow
+      if (insight) {
+        return "assets/nightCloudSnow.json";
+      } else {
+        return "assets/sunCloudSnow.json";
+      }
+    } else if (id >= 701 && id <= 781) {
+      // Atmosphere (e.g., fog, mist)
+      return 'assets/mist.json';
+    } else if (id == 800) {
+      // Clear sky
+      if (insight) {
+        return "assets/night .json";
+      } else {
+        return "assets/sunny.json";
+      }
+    } else if (id >= 801 && id <= 804) {
+      // Clouds
+      if (insight) {
+        return "assets/nightWithClouds.json";
+      } else {
+        return "assets/sunWithClouds.json";
+      }
+    } else {
+      // Default
+      if (insight) {
+        return "assets/night .json";
+      } else {
+        return "assets/sunny.json";
+      }
+    }
   }
 }
