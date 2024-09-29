@@ -42,6 +42,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     checkLocationPermission();
     fetchUserLocation();
+    if (position != null) getWeather(position!.latitude, position!.longitude);
     initializeTimeAndDate();
     startTimers();
   }
@@ -53,9 +54,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void startTimers() {
-    timer = Timer.periodic(const Duration(minutes: 5), (_) {
-      if (position != null) getWeather(position!.latitude, position!.longitude);
-    });
+    // Update time every second
     timer = Timer.periodic(const Duration(seconds: 1), (_) => getCurrentTime());
   }
 
@@ -112,21 +111,23 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void updateWeather(WeatherModel w, double latitude, double longitude) {
-    setState(() {
-      weather = w
-        ..temp = _convertTemperature(w.temp)
-        ..maxTemp = _convertTemperatureMax(w.maxTemp)
-        ..minTemp = _convertTemperatureMin(w.minTemp);
-      isLoading = false;
-      isNight = _isNightTime(_getSunsetTime(latitude, longitude));
-    });
-
-    weather?.getCurrentLottie(isNight).then((animation) {
+  void updateWeather(WeatherModel? w, double latitude, double longitude) {
+    if (w != null) {
       setState(() {
-        lottieAnimation = animation;
+        weather = w
+          ..temp = _convertTemperature(w.temp)
+          ..maxTemp = _convertTemperatureMax(w.maxTemp)
+          ..minTemp = _convertTemperatureMin(w.minTemp);
+        isLoading = false;
+        isNight = _isNightTime(_getSunsetTime(latitude, longitude));
       });
-    });
+
+      weather?.getCurrentLottie(isNight).then((animation) {
+        setState(() {
+          lottieAnimation = animation;
+        });
+      });
+    }
   }
 
   double _convertTemperature(double temp) => (temp - 273.15).roundToDouble();
@@ -153,7 +154,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (position != null) {
+    // Avoid calling getWeather repeatedly
+    if (position != null && weather == null) {
       getWeather(position!.latitude, position!.longitude);
     }
 
