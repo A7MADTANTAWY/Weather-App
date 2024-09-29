@@ -6,7 +6,7 @@ class WeatherService {
   Future<WeatherModel> getCurrentWeather(
       {required double lat, required double lon}) async {
     Response response = await dio.get(
-        'https://api.openweathermap.org/data/2.5/weather?lat=29&lon=31&appid=65b66e13e6cb6fcc6f455569594db9b1');
+        'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=65b66e13e6cb6fcc6f455569594db9b1');
     WeatherModel weatherModel = WeatherModel.fromJson(response.data);
     return weatherModel;
   }
