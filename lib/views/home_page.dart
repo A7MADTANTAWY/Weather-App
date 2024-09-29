@@ -106,7 +106,7 @@ class _HomePageState extends State<HomePage> {
     try {
       WeatherModel? w = await WeatherService()
           .getCurrentWeather(lat: latitude, lon: longitude);
-      if (w != null) updateWeather(w, latitude, longitude);
+      updateWeather(w, latitude, longitude);
     } catch (e) {
       debugPrint('Error: $e');
     }

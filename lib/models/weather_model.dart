@@ -1,5 +1,3 @@
-import 'package:lottie/lottie.dart';
-
 class WeatherModel {
   String weatherCondition;
   String weatherConditionDis;
