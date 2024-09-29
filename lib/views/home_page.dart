@@ -219,7 +219,7 @@ class _HomePageState extends State<HomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(weather?.weatherCondition ?? "Unknown",
+                Text(weather?.weatherConditionDis ?? "Unknown",
                     style: const TextStyle(fontSize: 30, color: Colors.white)),
                 const SizedBox(width: 10),
                 Icon(
