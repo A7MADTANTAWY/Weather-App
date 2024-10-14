@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:testing/models/weather_model.dart';
 
 class WeatherService {
@@ -11,9 +12,17 @@ class WeatherService {
   }) async {
     Response response = await dio.get(
         'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey');
-    WeatherModel weatherModel = WeatherModel.fromJson(response.data);
-    return weatherModel;
+    return WeatherModel.fromJson(response.data);
   }
 
-
+  Future<WeatherModel?> getWeatherByCity(String city) async {
+    try {
+      Response response = await dio.get(
+          'https://api.openweathermap.org/data/2.5/weather?q=$city&appid=$apiKey');
+      return WeatherModel.fromJson(response.data);
+    } catch (e) {
+      debugPrint('Error fetching weather by city: $e');
+      return null; // Handle errors and return null
+    }
+  }
 }
