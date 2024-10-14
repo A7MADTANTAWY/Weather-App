@@ -8,12 +8,12 @@ class WeatherModel {
   double windSpeed;
   double id;
   // double feelsLike;
-  // double pressure;
+  double pressure;
   // double visibility;
 
   WeatherModel({
     // required this.feelsLike,
-    // required this.pressure,
+    required this.pressure,
     // required this.visibility,
     required this.weatherCondition,
     required this.weatherConditionDis,
@@ -31,8 +31,8 @@ class WeatherModel {
       weatherConditionDis: json['weather'][0]['description'],
       // feelsLike:
       //     (json['main']['feelsLike'] as num).toDouble(), // Explicit conversion
-      // pressure:
-      //     (json['main']['pressure'] as num).toDouble(), // Explicit conversion
+      pressure:
+          (json['main']['pressure'] as num).toDouble(), // Explicit conversion
       // visibility:
       //     (json['main']['visibility'] as num).toDouble(), // Explicit conversion
       humidity:

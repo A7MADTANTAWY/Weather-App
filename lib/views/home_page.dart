@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:geocoding_platform_interface/src/models/placemark.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
@@ -10,7 +10,7 @@ import 'package:testing/services/get_current_city_name.dart';
 import 'package:testing/services/get_current_location_as_lat_lon.dart';
 import 'package:testing/services/weather_service.dart';
 import 'package:testing/views/loading.dart';
-import 'package:testing/widgets/appbar.dart';
+import 'package:testing/widgets/appbar.dart'; // Ensure to import your buildAppBar
 import 'package:testing/widgets/card.dart';
 
 class HomePage extends StatefulWidget {
@@ -31,6 +31,8 @@ class _HomePageState extends State<HomePage> {
   double nullValue = 0.0;
   String lottieAnimation = "assets/default_weather.json";
   bool isNight = false;
+  final TextEditingController _controller = TextEditingController();
+  String cityName = ''; // State variable for the city name
 
   @override
   void initState() {
@@ -44,17 +46,16 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     timer?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
-  // Time and Date Initialization
   void initializeTimeAndDate() {
     getCurrentTime();
     getCurrentDate();
   }
 
   void startTimers() {
-    // Update time every second
     timer = Timer.periodic(const Duration(seconds: 1), (_) => getCurrentTime());
   }
 
@@ -83,7 +84,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> convertCoordinatesToAddress(double latitude, double longitude) async {
+  Future<void> convertCoordinatesToAddress(
+      double latitude, double longitude) async {
     try {
       Placemark? addr = await getAddressFromCoordinates(latitude, longitude);
       setState(() {
@@ -96,10 +98,23 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getWeather(double latitude, double longitude) async {
     try {
-      WeatherModel? w = await WeatherService().getCurrentWeather(lat: latitude, lon: longitude);
+      WeatherModel? w = await WeatherService()
+          .getCurrentWeather(lat: latitude, lon: longitude);
       updateWeather(w, latitude, longitude);
     } catch (e) {
       debugPrint('Error fetching weather: $e');
+    }
+  }
+
+  Future<void> getWeatherByCity(String city) async {
+    try {
+      WeatherModel? w = await WeatherService().getWeatherByCity(city);
+      updateWeather(w, position?.latitude ?? 0, position?.longitude ?? 0);
+      setState(() {
+        cityName = city; // Update the cityName state variable with the searched city
+      });
+    } catch (e) {
+      debugPrint('Error fetching weather by city: $e');
     }
   }
 
@@ -111,7 +126,8 @@ class _HomePageState extends State<HomePage> {
           ..maxTemp = _convertTemperatureMax(w.maxTemp)
           ..minTemp = _convertTemperatureMin(w.minTemp);
         isLoading = false;
-        isNight = _isNightTime(_getSunsetTime(latitude, longitude), _getSunriseTime(latitude, longitude));
+        isNight = _isNightTime(_getSunsetTime(latitude, longitude),
+            _getSunriseTime(latitude, longitude));
       });
 
       weather?.getCurrentLottie(isNight).then((animation) {
@@ -132,11 +148,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   DateTime _getSunsetTime(double latitude, double longitude) {
-    return DateTime.now().copyWith(hour: 18, minute: 0); // Example sunset at 18:00
+    return DateTime.now()
+        .copyWith(hour: 18, minute: 0); // Example sunset at 18:00
   }
 
   DateTime _getSunriseTime(double latitude, double longitude) {
-    return DateTime.now().copyWith(hour: 6, minute: 0); // Example sunrise at 6:00 AM
+    return DateTime.now()
+        .copyWith(hour: 6, minute: 0); // Example sunrise at 6:00 AM
+  }
+
+  void goBackToCurrentLocation() {
+    setState(() {
+      cityName = ''; // Clear the city name
+      fetchUserLocation(); // Fetch the weather for the current location
+    });
   }
 
   Widget buildWeatherCard(String title, String info, Icon icon) {
@@ -149,37 +174,51 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (position != null && weather == null) {
-      getWeather(position!.latitude, position!.longitude);
-    }
-
-    isNight = _isNightTime(
-      _getSunsetTime(position?.latitude ?? 0, position?.longitude ?? 0),
-      _getSunriseTime(position?.latitude ?? 0, position?.longitude ?? 0),
-    );
-
-    return isLoading
-        ? Loading(isNight: isNight)
-        : Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  isNight ? constants.night_gradient1 : constants.day_gradient1,
-                  isNight ? constants.night_gradient2 : constants.day_gradient2,
-                  isNight ? constants.night_gradient3 : constants.day_gradient3,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Scaffold(
-              backgroundColor: Colors.transparent,
-              appBar: buildAppBar(address?.subAdministrativeArea ?? ''),
-              body: _buildBody(),
-            ),
-          );
+@override
+Widget build(BuildContext context) {
+  if (position != null && weather == null) {
+    getWeather(position!.latitude, position!.longitude);
   }
+
+  isNight = _isNightTime(
+    _getSunsetTime(position?.latitude ?? 0, position?.longitude ?? 0),
+    _getSunriseTime(position?.latitude ?? 0, position?.longitude ?? 0),
+  );
+
+  return isLoading
+      ? Loading(isNight: isNight)
+      : Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isNight ? constants.night_gradient1 : constants.day_gradient1,
+                isNight ? constants.night_gradient2 : constants.day_gradient2,
+                isNight ? constants.night_gradient3 : constants.day_gradient3,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: buildAppBar(
+              cityName.isNotEmpty
+                  ? cityName
+                  : (address?.subAdministrativeArea ?? ''),
+              _controller,
+              (city) {
+                getWeatherByCity(city);
+                _controller.clear(); // Clear the input field after search
+              },
+              cityName.isNotEmpty
+                  ? () => goBackToCurrentLocation() // Use a lambda for the back button
+                  : null, // Set to null if the cityName is empty
+            ),
+            body: _buildBody(),
+          ),
+        );
+}
+
 
   Widget _buildBody() {
     return ListView(
@@ -190,7 +229,8 @@ class _HomePageState extends State<HomePage> {
             Text('${weather?.temp.toInt() ?? 0}°',
                 style: const TextStyle(fontSize: 80, color: Colors.white)),
             const SizedBox(height: 5),
-            Text(address?.locality ?? "",
+            // Display the city name here
+            Text(cityName.isNotEmpty ? cityName : (address?.locality ?? ""),
                 style: const TextStyle(fontSize: 16, color: Colors.white)),
             Text(date,
                 style: const TextStyle(fontSize: 16, color: Colors.white)),
@@ -203,7 +243,9 @@ class _HomePageState extends State<HomePage> {
                     style: const TextStyle(fontSize: 30, color: Colors.white)),
                 const SizedBox(width: 10),
                 Icon(
-                  isNight ? Icons.nights_stay_outlined : Icons.wb_sunny_outlined,
+                  isNight
+                      ? Icons.nights_stay_outlined
+                      : Icons.wb_sunny_outlined,
                   color: Colors.white,
                   size: 30,
                 ),
@@ -240,6 +282,15 @@ class _HomePageState extends State<HomePage> {
                 const Icon(Icons.arrow_drop_down, color: Colors.white)),
             buildWeatherCard('Max', '${weather?.maxTemp.toInt() ?? nullValue}°',
                 const Icon(Icons.arrow_drop_up, color: Colors.white)),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            buildWeatherCard(
+                'Pressure',
+                '${weather?.pressure.toInt() ?? nullValue} hPa',
+                const Icon(Icons.speed_outlined, color: Colors.white)),
           ],
         ),
       ],
