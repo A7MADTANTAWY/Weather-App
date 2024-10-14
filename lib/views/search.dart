@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geocoding_platform_interface/src/models/placemark.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
@@ -7,21 +8,23 @@ import 'package:lottie/lottie.dart';
 import 'package:testing/const/const.dart' as constants;
 import 'package:testing/models/weather_model.dart';
 import 'package:testing/services/get_current_city_name.dart';
-import 'package:testing/services/get_current_location_as_lat_lon.dart';
 import 'package:testing/services/weather_service.dart';
 import 'package:testing/views/loading.dart';
 import 'package:testing/widgets/appbar.dart';
 import 'package:testing/widgets/card.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class SearchResult extends StatefulWidget {
+  final double latitude;
+  final double longitude;
+
+  const SearchResult(
+      {super.key, required this.latitude, required this.longitude});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<SearchResult> createState() => _SearchResultState();
 }
 
-class _HomePageState extends State<HomePage> {
-  Position? position;
+class _SearchResultState extends State<SearchResult> {
   Placemark? address;
   WeatherModel? weather;
   String date = '';
@@ -35,9 +38,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    checkLocationPermission();
-    fetchUserLocation();
     initializeTimeAndDate();
+    fetchWeather();
     startTimers();
   }
 
@@ -69,21 +71,50 @@ class _HomePageState extends State<HomePage> {
       date = DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now());
     });
   }
+    final TextEditingController _controller = TextEditingController();
+  String _result = '';
 
-  Future<void> fetchUserLocation() async {
+  Future<void> _convertAddressToLatLon(String address) async {
     try {
-      Position pos = await getCurrentLocation();
-      setState(() {
-        position = pos;
-      });
-      convertCoordinatesToAddress(position!.latitude, position!.longitude);
-      getWeather(position!.latitude, position!.longitude);
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        final lat = locations.first.latitude;
+        final lon = locations.first.longitude;
+        setState(() {
+          _result = 'Latitude: $lat, Longitude: $lon';
+        });
+      } else {
+        setState(() {
+          _result = 'No locations found.';
+        });
+      }
     } catch (e) {
-      debugPrint('Error fetching location: $e');
+      setState(() {
+        _result = 'Error: $e';
+      });
     }
   }
 
-  Future<void> convertCoordinatesToAddress(double latitude, double longitude) async {
+  // Method to return the latitude and longitude as a tuple
+  Future<List<double>?> getLatLon(String address) async {
+    try {
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        return [locations.first.latitude, locations.first.longitude];
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+    return null; // Return null if no locations found or error occurs
+  }
+
+  Future<void> fetchWeather() async {
+    await convertCoordinatesToAddress(widget.latitude, widget.longitude);
+    await getWeather(widget.latitude, widget.longitude);
+  }
+
+  Future<void> convertCoordinatesToAddress(
+      double latitude, double longitude) async {
     try {
       Placemark? addr = await getAddressFromCoordinates(latitude, longitude);
       setState(() {
@@ -96,7 +127,8 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getWeather(double latitude, double longitude) async {
     try {
-      WeatherModel? w = await WeatherService().getCurrentWeather(lat: latitude, lon: longitude);
+      WeatherModel? w = await WeatherService()
+          .getCurrentWeather(lat: latitude, lon: longitude);
       updateWeather(w, latitude, longitude);
     } catch (e) {
       debugPrint('Error fetching weather: $e');
@@ -111,7 +143,8 @@ class _HomePageState extends State<HomePage> {
           ..maxTemp = _convertTemperatureMax(w.maxTemp)
           ..minTemp = _convertTemperatureMin(w.minTemp);
         isLoading = false;
-        isNight = _isNightTime(_getSunsetTime(latitude, longitude), _getSunriseTime(latitude, longitude));
+        isNight = _isNightTime(_getSunsetTime(latitude, longitude),
+            _getSunriseTime(latitude, longitude));
       });
 
       weather?.getCurrentLottie(isNight).then((animation) {
@@ -132,11 +165,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   DateTime _getSunsetTime(double latitude, double longitude) {
-    return DateTime.now().copyWith(hour: 18, minute: 0); // Example sunset at 18:00
+    return DateTime.now()
+        .copyWith(hour: 18, minute: 0); // Example sunset at 18:00
   }
 
   DateTime _getSunriseTime(double latitude, double longitude) {
-    return DateTime.now().copyWith(hour: 6, minute: 0); // Example sunrise at 6:00 AM
+    return DateTime.now()
+        .copyWith(hour: 6, minute: 0); // Example sunrise at 6:00 AM
   }
 
   Widget buildWeatherCard(String title, String info, Icon icon) {
@@ -150,15 +185,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (position != null && weather == null) {
-      getWeather(position!.latitude, position!.longitude);
-    }
-
-    isNight = _isNightTime(
-      _getSunsetTime(position?.latitude ?? 0, position?.longitude ?? 0),
-      _getSunriseTime(position?.latitude ?? 0, position?.longitude ?? 0),
-    );
-
     return isLoading
         ? Loading(isNight: isNight)
         : Container(
@@ -194,6 +220,7 @@ class _HomePageState extends State<HomePage> {
                 style: const TextStyle(fontSize: 16, color: Colors.white)),
             Text(date,
                 style: const TextStyle(fontSize: 16, color: Colors.white)),
+            const SizedBox(height: 20),
             const SizedBox(height: 60),
             Lottie.asset(lottieAnimation),
             Row(
@@ -203,7 +230,9 @@ class _HomePageState extends State<HomePage> {
                     style: const TextStyle(fontSize: 30, color: Colors.white)),
                 const SizedBox(width: 10),
                 Icon(
-                  isNight ? Icons.nights_stay_outlined : Icons.wb_sunny_outlined,
+                  isNight
+                      ? Icons.nights_stay_outlined
+                      : Icons.wb_sunny_outlined,
                   color: Colors.white,
                   size: 30,
                 ),

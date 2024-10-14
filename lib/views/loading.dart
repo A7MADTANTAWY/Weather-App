@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:testing/const/const.dart';
+import 'package:testing/const/const.dart' as constants;
 
 class Loading extends StatefulWidget {
-  const Loading({super.key});
+  final bool isNight;
+  const Loading(
+      {super.key,
+      required this.isNight}); // Pass isNight as a constructor parameter
 
   @override
   State<Loading> createState() => _LoadingState();
@@ -13,12 +16,18 @@ class _LoadingState extends State<Loading> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            night_gradient1,
-            night_gradient2,
-            night_gradient3,
+            widget.isNight
+                ? constants.night_gradient1
+                : constants.day_gradient1,
+            widget.isNight
+                ? constants.night_gradient2
+                : constants.day_gradient2,
+            widget.isNight
+                ? constants.night_gradient3
+                : constants.day_gradient3,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
