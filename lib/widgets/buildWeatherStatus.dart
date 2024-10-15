@@ -21,6 +21,11 @@ Widget buildWeatherStats({
   required bool isNight,
   required nullValue,
 }) {
+  // Convert temperature from Kelvin to Celsius
+  double convertTemp(double kelvin) => (kelvin - 273.15).roundToDouble();
+
+  // Convert wind speed from m/s to km/h
+  double convertWindSpeed(double speed) => (speed * 3.6).roundToDouble();
 
   return Column(
     children: [
@@ -29,7 +34,8 @@ Widget buildWeatherStats({
         children: [
           buildWeatherCard(
             title: 'Wind Speed',
-            info: '${weather?.windSpeed ?? nullValue} km/h',
+            info:
+                '${weather != null ? convertWindSpeed(weather.windSpeed) : nullValue} km/h',
             icon: const Icon(Icons.wind_power_outlined, color: Colors.white),
             isNight: isNight,
           ),
@@ -46,13 +52,15 @@ Widget buildWeatherStats({
         children: [
           buildWeatherCard(
             title: 'Min Temp',
-            info: '${weather?.minTemp ?? nullValue} °C',
+            info:
+                '${weather != null ? convertTemp(weather.minTemp) : nullValue} °C',
             icon: const Icon(Icons.thermostat, color: Colors.white),
             isNight: isNight,
           ),
           buildWeatherCard(
             title: 'Max Temp',
-            info: '${weather?.maxTemp ?? nullValue} °C',
+            info:
+                '${weather != null ? convertTemp(weather.maxTemp) : nullValue} °C',
             icon: const Icon(Icons.thermostat, color: Colors.white),
             isNight: isNight,
           ),

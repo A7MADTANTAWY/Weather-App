@@ -32,6 +32,7 @@ class _HomePageState extends State<HomePage> {
   bool isNight = false;
   final TextEditingController _controller = TextEditingController();
   String cityName = ''; // State variable for the city name
+  bool isSearching = false; // New variable for loading state
 
   @override
   void initState() {
@@ -106,6 +107,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> getWeatherByCity(String city) async {
+    setState(() {
+      isSearching = true; // Set loading state to true
+    });
+
     try {
       WeatherModel? w = await WeatherService().getWeatherByCity(city);
       if (w == null) {
@@ -114,6 +119,7 @@ class _HomePageState extends State<HomePage> {
       updateWeather(w, position?.latitude ?? 0, position?.longitude ?? 0);
       setState(() {
         cityName = city; // Update the cityName state variable
+        isSearching = false; // Reset loading state
       });
     } catch (e) {
       // Display floating error message
@@ -133,16 +139,16 @@ class _HomePageState extends State<HomePage> {
         ),
       );
       debugPrint('Error fetching weather by city: $e');
+      setState(() {
+        isSearching = false; // Reset loading state on error
+      });
     }
   }
 
   void updateWeather(WeatherModel? w, double latitude, double longitude) {
     if (w != null) {
       setState(() {
-        weather = w
-          ..temp = _convertTemperature(w.temp)
-          ..maxTemp = _convertTemperatureMax(w.maxTemp)
-          ..minTemp = _convertTemperatureMin(w.minTemp);
+        weather = w..temp = convertTemp(w.temp);
         isLoading = false;
         isNight = _isNightTime(_getSunsetTime(latitude, longitude),
             _getSunriseTime(latitude, longitude));
@@ -156,9 +162,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  double _convertTemperature(double temp) => (temp - 273.15).roundToDouble();
-  double _convertTemperatureMax(double temp) => (temp - 273.15).ceilToDouble();
-  double _convertTemperatureMin(double temp) => (temp - 273.15).floorToDouble();
+  // Convert temperature from Kelvin to Celsius
+  double convertTemp(double kelvin) => (kelvin - 273.15).roundToDouble();
 
   bool _isNightTime(DateTime sunset, DateTime sunrise) {
     DateTime now = DateTime.now();
@@ -175,10 +180,21 @@ class _HomePageState extends State<HomePage> {
         .copyWith(hour: 6, minute: 0); // Example sunrise at 6:00 AM
   }
 
+  Future<void> refreshWeather() async {
+    if (position != null) {
+      await getWeather(position!.latitude, position!.longitude);
+    }
+  }
+
   void goBackToCurrentLocation() {
     setState(() {
+      isSearching = true; // Set loading state to true
       cityName = ''; // Clear the city name
-      fetchUserLocation(); // Fetch the weather for the current location
+      fetchUserLocation().then((_) {
+        setState(() {
+          isSearching = false; // Reset loading state after fetching location
+        });
+      });
     });
   }
 
@@ -223,22 +239,35 @@ class _HomePageState extends State<HomePage> {
                         goBackToCurrentLocation() // Use a lambda for the back button
                     : null, // Set to null if the cityName is empty
               ),
-              body: Column(
-                children: [
-                  Expanded(
-                    child: buildBody(
-                      date: date,
-                      lottieAnimation: lottieAnimation,
-                      weather: weather,
-                      cityName: cityName.isNotEmpty
-                          ? cityName
-                          : (address?.locality ?? ''),
-                      address: address,
-                      isNight: isNight,
-                      nullValue: nullValue,
+              body: RefreshIndicator(
+                onRefresh: refreshWeather, // Refresh function
+                child: Column(
+                  children: [
+                    if (isSearching) // Show loading message
+                      const Center(
+                        child: Text(
+                          'Loading...',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: buildBody(
+                        date: date,
+                        lottieAnimation: lottieAnimation,
+                        weather: weather,
+                        cityName: cityName.isNotEmpty
+                            ? cityName
+                            : (address?.locality ?? ''),
+                        address: address,
+                        isNight: isNight,
+                        nullValue: nullValue,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
