@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:testing/views/home_page.dart';
 
 void main() {
-  runApp(const GetLocation());
+  runApp(const WeatherApp());
 }
 
-class GetLocation extends StatelessWidget {
-  const GetLocation({super.key});
+class WeatherApp extends StatelessWidget {
+  const WeatherApp({super.key});
 
   @override
   Widget build(BuildContext context) {
