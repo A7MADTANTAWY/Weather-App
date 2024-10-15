@@ -108,11 +108,30 @@ class _HomePageState extends State<HomePage> {
   Future<void> getWeatherByCity(String city) async {
     try {
       WeatherModel? w = await WeatherService().getWeatherByCity(city);
+      if (w == null) {
+        throw Exception("City not found");
+      }
       updateWeather(w, position?.latitude ?? 0, position?.longitude ?? 0);
       setState(() {
         cityName = city; // Update the cityName state variable
       });
     } catch (e) {
+      // Display floating error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Error: City not found. Please enter a valid city.',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.grey[10],
+          behavior: SnackBarBehavior.floating, // Floating effect
+          elevation: 6.0, // Elevation for shadow
+          margin: const EdgeInsets.all(16), // Margin to create floating space
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12), // Rounded corners
+          ),
+        ),
+      );
       debugPrint('Error fetching weather by city: $e');
     }
   }
