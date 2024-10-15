@@ -11,7 +11,7 @@ AppBar buildAppBar(
     elevation: 0,
     title: Text(
       title,
-      style: const TextStyle(color: Colors.white, fontSize: 20),
+      style: const TextStyle(color: Colors.white, fontSize: 18),
     ),
     actions: [
       // Only show the back button if onBack is not null
@@ -21,7 +21,7 @@ AppBar buildAppBar(
           onPressed: () => onBack(), // Call the onBack function when pressed
         ),
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.only(right: 10),
         child: SizedBox(
           width: 200,
           height: 35,
@@ -38,7 +38,8 @@ AppBar buildAppBar(
                 borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide.none,
               ),
-              prefixIcon: const Icon(Icons.search, color: Colors.white, size: 20),
+              prefixIcon:
+                  const Icon(Icons.search, color: Colors.white, size: 20),
             ),
             onSubmitted: onSearch, // Call the search function on submit
           ),
