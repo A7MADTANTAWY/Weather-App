@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.testing"
     compileSdk = 34
-    ndkVersion = flutter.ndkVersion
+    ndkVersion "23.1.7779620" // Example NDK version, change if necessary
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -16,7 +16,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
+        jvmTarget = "1.8"
     }
 
     defaultConfig {
@@ -24,8 +24,8 @@ android {
         applicationId = "com.example.testing"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 23 // Increased minSdk version for better compatibility
+        targetSdk = 34 // Updated to match compileSdk version
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -33,8 +33,25 @@ android {
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Using debug keys for now, but you should configure your own release signing.
             signingConfig = signingConfigs.debug
+
+            // Example signing config for release (update with your actual keystore)
+            // Uncomment and configure if you want to use a release keystore
+            /*
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            */
+        }
+    }
+
+    signingConfigs {
+        release {
+            keyAlias 'your-key-alias'
+            keyPassword 'your-key-password'
+            storeFile file('path-to-your-keystore-file')
+            storePassword 'your-store-password'
         }
     }
 }

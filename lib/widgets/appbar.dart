@@ -4,7 +4,7 @@ AppBar buildAppBar(
   String title,
   TextEditingController controller,
   Function(String) onSearch,
-  Function()? onBack, // Change to Function()? to allow null
+  Function()? onBack, // Allows for nullable back button functionality
 ) {
   return AppBar(
     backgroundColor: Colors.transparent,
@@ -13,13 +13,13 @@ AppBar buildAppBar(
       title,
       style: const TextStyle(color: Colors.white, fontSize: 18),
     ),
+    leading: onBack != null // Adds leading for the back button, if applicable
+        ? IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => onBack(),
+          )
+        : null,
     actions: [
-      // Only show the back button if onBack is not null
-      if (onBack != null)
-        IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => onBack(), // Call the onBack function when pressed
-        ),
       Padding(
         padding: const EdgeInsets.only(right: 10),
         child: SizedBox(
@@ -41,7 +41,7 @@ AppBar buildAppBar(
               prefixIcon:
                   const Icon(Icons.search, color: Colors.white, size: 20),
             ),
-            onSubmitted: onSearch, // Call the search function on submit
+            onSubmitted: onSearch, // Trigger search on submit
           ),
         ),
       ),

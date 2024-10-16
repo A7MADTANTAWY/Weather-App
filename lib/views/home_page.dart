@@ -129,7 +129,7 @@ class _HomePageState extends State<HomePage> {
             'Error: City not found. Please enter a valid city.',
             style: TextStyle(color: Colors.white),
           ),
-          backgroundColor: Colors.grey[10],
+          backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating, // Floating effect
           elevation: 6.0, // Elevation for shadow
           margin: const EdgeInsets.all(16), // Margin to create floating space
@@ -181,7 +181,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> refreshWeather() async {
-    if (position != null) {
+    if (cityName.isNotEmpty) {
+      // If the user has searched for a city, refresh weather for that city
+      await getWeatherByCity(cityName);
+    } else if (position != null) {
+      // If no city is searched, refresh weather for the current location
       await getWeather(position!.latitude, position!.longitude);
     }
   }
